@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radial Stakeholder Map - Campus Frontline Information Infrastructure</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #fcfaff;
+    }
+    .heading-font {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    /* Radial mind map tree aesthetics */
+    .branch-line {
+      stroke: #c4b5fd;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      transition: all 0.3s ease;
+    }
+    .sub-branch-line {
+      stroke: #ddd6fe;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      transition: all 0.3s ease;
+    }
+    .rel-arc {
+      stroke-dasharray: 6 4;
+      animation: dashAnim 25s linear infinite;
+    }
+    @keyframes dashAnim {
+      to {
+        stroke-dashoffset: -400;
+      }
+    }
+    .node-pill {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
+      cursor: pointer;
+    }
+    .node-pill:hover {
+      transform: scale(1.06);
+      filter: drop-shadow(0 6px 14px rgba(109, 40, 217, 0.22));
+    }
+    .active-node {
+      filter: drop-shadow(0 0 0 3px #7c3aed) drop-shadow(0 8px 18px rgba(124, 58, 237, 0.35)) !important;
+    }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen p-3 sm:p-6 lg:p-8 flex flex-col items-center">
+
+  <!-- Header Bar -->
+  <header class="w-full max-w-[1650px] mx-auto mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-purple-100">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-bold uppercase tracking-wider mb-1.5">
+        <span>ASG 201: Assignment 2</span>
+        <span>•</span>
+        <span>University of Miami Ecosystem</span>
+      </div>
+      <h1 class="heading-font text-2xl sm:text-3xl font-bold text-purple-950 tracking-tight">
+        Campus Frontline Information Infrastructure
+      </h1>
+      <p class="text-slate-600 text-xs sm:text-sm mt-0.5">
+        Radial stakeholder map modeling the disconnect between central operations, frontline service desks, and student outcomes.
+      </p>
+    </div>
+
+    <!-- Quick Mode Toggle Buttons -->
+    <div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
+      <button id="toggleRelBtn" onclick="toggleRelationshipLines()" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span>Toggle Dependencies</span>
+      </button>
+      <button onclick="resetSelection()" class="px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition">
+        Reset Focus
+      </button>
+    </div>
+  </header>
+
+  <main class="w-full max-w-[1650px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- LEFT: Radial Mind Map SVG Canvas (Reference Image Style) -->
+    <div class="lg:col-span-9 bg-white border border-purple-100 rounded-3xl p-4 sm:p-6 shadow-xl shadow-purple-900/5 relative overflow-hidden">
+      
+      <!-- Subtle top badge explaining interactivity -->
+      <div class="flex items-center justify-between px-2 mb-2">
+        <div class="flex items-center gap-2 text-xs text-purple-700 font-medium">
+          <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse"></span>
+          <span>Click any stakeholder oval to inspect stakes, worries, and power</span>
+        </div>
+        <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">Radial Spider Layout • Decluttered &amp; Scaled</span>
+      </div>
+
+      <div class="relative w-full overflow-x-auto">
+        <svg id="stakeholderSvg" viewBox="-90 -15 1420 905" class="w-full h-auto min-w-[1100px] select-none">
+          <defs>
+            <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6d28d9"/>
+              <stop offset="100%" stop-color="#4c1d95"/>
+            </linearGradient>
+            <linearGradient id="tier1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#a855f7"/>
+              <stop offset="100%" stop-color="#7e22ce"/>
+            </linearGradient>
+            <linearGradient id="tier2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#d8b4fe"/>
+              <stop offset="100%" stop-color="#c084fc"/>
+            </linearGradient>
+            
+            <!-- Glow filter for active selection -->
+            <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+
+          <!-- ================= PRIMARY STEMS FROM CENTER ================= -->
+          <g id="stemsGroup">
+            <!-- 1. Top Right: Direct Users -->
+            <path d="M 610 430 Q 700 330 790 270" class="branch-line" />
+            <!-- 2. Right: Decision Makers -->
+            <path d="M 610 430 Q 740 430 860 430" class="branch-line" />
+            <!-- 3. Bottom Right: Opponents -->
+            <path d="M 610 430 Q 710 540 805 605" class="branch-line" />
+            <!-- 4. Bottom Left: Beneficiaries -->
+            <path d="M 610 430 Q 500 545 405 620" class="branch-line" />
+            <!-- 5. Left: Influencers -->
+            <path d="M 610 430 Q 475 440 355 445" class="branch-line" />
+            <!-- 6. Top Left: Indirect Users -->
+            <path d="M 610 430 Q 515 330 420 260" class="branch-line" />
+
+            <!-- ================= SUB-STEMS TO LEAF CLUSTERS ================= -->
+            <!-- Direct Users Subs -->
+            <path d="M 790 270 Q 860 210 935 160" class="sub-branch-line" />
+            <path d="M 790 270 Q 895 270 990 270" class="sub-branch-line" />
+            
+            <!-- Decision Makers Subs -->
+            <path d="M 860 430 Q 940 375 1015 355" class="sub-branch-line" />
+            <path d="M 860 430 Q 940 465 1015 480" class="sub-branch-line" />
+
+            <!-- Opponents Subs (High-Level Admin & Financial) -->
+            <path d="M 805 605 Q 890 660 975 685" class="sub-branch-line" />
+            <path d="M 805 605 Q 830 705 865 760" class="sub-branch-line" />
+
+            <!-- Beneficiaries Subs (Student Affairs & Training) -->
+            <path d="M 405 620 Q 375 715 350 775" class="sub-branch-line" />
+            <path d="M 405 620 Q 315 670 230 705" class="sub-branch-line" />
+
+            <!-- Influencers Subs (Student Government & RSA) -->
+            <path d="M 355 445 Q 260 425 175 415" class="sub-branch-line" />
+            <path d="M 355 445 Q 260 495 175 530" class="sub-branch-line" />
+
+            <!-- Indirect Users Subs (RAs, Other Campus Offices, Parents) -->
+            <path d="M 420 260 Q 350 185 280 140" class="sub-branch-line" />
+            <path d="M 420 260 Q 295 230 180 215" class="sub-branch-line" />
+            <path d="M 420 260 Q 320 290 235 305" class="sub-branch-line" />
+
+            <!-- Outer Leaf Hairlines -->
+            <path d="M 935 160 L 935 105" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 935 160 L 1055 120" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 990 270 L 1105 240" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 990 270 L 1105 295" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+
+            <path d="M 1093 355 L 1135 355" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 1093 480 L 1135 480" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+
+            <path d="M 280 112 L 280 92" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 102 215 L 75 215" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 157 305 L 120 305" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 97 415 L 65 415" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 97 530 L 65 530" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 152 705 L 120 705" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+            <path d="M 350 803 L 350 822" class="sub-branch-line stroke-purple-200" stroke-width="1.2" />
+          </g>
+
+          <!-- ================= RELATIONSHIP ARCS & LABELS (NON-OVERLAPPING) ================= -->
+          <g id="relationshipLinesGroup" class="transition-opacity duration-300">
+            <!-- 1. The Deflection Loop (RDA -> RA -> Student) -->
+            <path id="relDeflection" d="M 915 135 C 760 25, 420 25, 290 115" fill="none" stroke="#ef4444" stroke-width="2.5" class="rel-arc" />
+            <!-- Pill Background for Deflection Loop Label -->
+            <rect x="370" y="16" width="480" height="24" rx="12" fill="#fee2e2" stroke="#fca5a5" stroke-width="1" />
+            <text x="610" y="32" text-anchor="middle" fill="#b91c1c" font-size="11" font-weight="700" letter-spacing="0.4">
+              ⇄ RELATIONSHIP 1: THE DEFLECTION LOOP (Staff → RAs → Unresolved Inquiries)
+            </text>
+
+            <!-- 2. The Bureaucratic & Financial Silo -->
+            <path id="relSilo" d="M 975 655 C 1170 630, 1170 410, 1025 330" fill="none" stroke="#8b5cf6" stroke-width="2.5" class="rel-arc" />
+            <rect x="1035" y="555" width="215" height="42" rx="8" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.2" filter="drop-shadow(0 2px 4px rgba(109, 40, 217, 0.08))" />
+            <text x="1142" y="573" text-anchor="middle" fill="#6d28d9" font-size="10" font-weight="700">
+              -- INSTITUTIONAL SILO --
+            </text>
+            <text x="1142" y="588" text-anchor="middle" fill="#5b21b6" font-size="9" font-weight="600">
+              Budget Caps &amp; Siloed Access
+            </text>
+
+            <!-- 3. The Escalation Channel (Explicitly anchored to Parents bubble edge at 205, 332) -->
+            <path id="relEscalation" d="M 205 332 C 60 400, 50 610, 205 725" fill="none" stroke="#f59e0b" stroke-width="2.2" class="rel-arc" />
+            <rect x="-25" y="465" width="185" height="40" rx="8" fill="#fffbeb" stroke="#fcd34d" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(245, 158, 11, 0.08))" />
+            <text x="67" y="482" text-anchor="middle" fill="#b45309" font-size="10" font-weight="700">
+              ⚡ ESCALATION CHANNEL
+            </text>
+            <text x="67" y="496" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">
+              Student &amp; Parent Outcry → SG/RSA
+            </text>
+          </g>
+
+          <!-- ================= CENTER NODE (CORE PROBLEM) ================= -->
+          <g class="node-pill" onclick="selectNode('center')" id="node-center">
+            <ellipse cx="610" cy="430" rx="112" ry="54" fill="url(#centerGrad)" />
+            <text x="610" y="420" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="800" font-family="'Space Grotesk', sans-serif">
+              Frontline Information
+            </text>
+            <text x="610" y="439" text-anchor="middle" fill="#f5d0fe" font-size="12.5" font-weight="700">
+              Infrastructure
+            </text>
+            <text x="610" y="457" text-anchor="middle" fill="#e9d5ff" font-size="9.5" font-weight="600" opacity="0.95">
+              UM Campus Service Desks
+            </text>
+          </g>
+
+          <!-- ================= 6 PRIMARY CATEGORY NODES ================= -->
+          <!-- 1. DIRECT USERS -->
+          <g class="node-pill" onclick="selectNode('cat-direct')" id="node-cat-direct">
+            <ellipse cx="790" cy="270" rx="76" ry="34" fill="#9333ea" />
+            <text x="790" y="267" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Direct Users</text>
+            <text x="790" y="283" text-anchor="middle" fill="#f3e8ff" font-size="9.5" font-weight="500">Students &amp; Frontline Staff</text>
+          </g>
+
+          <!-- 2. DECISION MAKERS -->
+          <g class="node-pill" onclick="selectNode('cat-decision')" id="node-cat-decision">
+            <ellipse cx="860" cy="430" rx="80" ry="34" fill="#7e22ce" />
+            <text x="860" y="427" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Decision Makers</text>
+            <text x="860" y="443" text-anchor="middle" fill="#f3e8ff" font-size="9.5" font-weight="500">UM HRL Leadership</text>
+          </g>
+
+          <!-- 3. OPPONENTS -->
+          <g class="node-pill" onclick="selectNode('cat-opponents')" id="node-cat-opponents">
+            <ellipse cx="805" cy="605" rx="76" ry="34" fill="#be185d" />
+            <text x="805" y="602" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Opponents</text>
+            <text x="805" y="618" text-anchor="middle" fill="#fce7f3" font-size="9" font-weight="500">Admin &amp; Financial Friction</text>
+          </g>
+
+          <!-- 4. BENEFICIARIES -->
+          <g class="node-pill" onclick="selectNode('cat-beneficiaries')" id="node-cat-beneficiaries">
+            <ellipse cx="405" cy="620" rx="78" ry="34" fill="#4338ca" />
+            <text x="405" y="617" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Beneficiaries</text>
+            <text x="405" y="633" text-anchor="middle" fill="#e0e7ff" font-size="9" font-weight="500">Student Affairs &amp; Training</text>
+          </g>
+
+          <!-- 5. INFLUENCERS -->
+          <g class="node-pill" onclick="selectNode('cat-influencers')" id="node-cat-influencers">
+            <ellipse cx="355" cy="445" rx="76" ry="34" fill="#b45309" />
+            <text x="355" y="442" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Influencers</text>
+            <text x="355" y="458" text-anchor="middle" fill="#fef3c7" font-size="9" font-weight="500">UM Student Government</text>
+          </g>
+
+          <!-- 6. INDIRECT USERS -->
+          <g class="node-pill" onclick="selectNode('cat-indirect')" id="node-cat-indirect">
+            <ellipse cx="420" cy="260" rx="76" ry="34" fill="#0284c7" />
+            <text x="420" y="257" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Indirect Users</text>
+            <text x="420" y="273" text-anchor="middle" fill="#e0f2fe" font-size="9.5" font-weight="500">RAs, Offices, Parents</text>
+          </g>
+
+          <!-- ================= LEVEL 2 SUB-NODES (SPECIFIC UM ENTITIES) ================= -->
+          <!-- Direct Users Subs -->
+          <g class="node-pill" onclick="selectNode('rda')" id="node-rda">
+            <ellipse cx="935" cy="160" rx="76" ry="29" fill="#c084fc" />
+            <text x="935" y="156" text-anchor="middle" fill="#3b0764" font-size="10.5" font-weight="700">Frontline Desk Staff</text>
+            <text x="935" y="171" text-anchor="middle" fill="#3b0764" font-size="9" font-weight="600">&amp; RDAs (Lakeside/Vista)</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('students')" id="node-students">
+            <ellipse cx="990" cy="270" rx="75" ry="29" fill="#c084fc" />
+            <text x="990" y="266" text-anchor="middle" fill="#3b0764" font-size="10.5" font-weight="700">UM Residential</text>
+            <text x="990" y="281" text-anchor="middle" fill="#3b0764" font-size="9" font-weight="600">Students</text>
+          </g>
+
+          <!-- Decision Makers Subs -->
+          <g class="node-pill" onclick="selectNode('hrl')" id="node-hrl">
+            <ellipse cx="1015" cy="355" rx="78" ry="29" fill="#d8b4fe" />
+            <text x="1015" y="351" text-anchor="middle" fill="#4a044e" font-size="10.5" font-weight="700">UM Housing &amp;</text>
+            <text x="1015" y="366" text-anchor="middle" fill="#4a044e" font-size="9" font-weight="600">Res Life (HRL) Leadership</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('facilities-mgmt')" id="node-facilities-mgmt">
+            <ellipse cx="1015" cy="480" rx="78" ry="29" fill="#d8b4fe" />
+            <text x="1015" y="476" text-anchor="middle" fill="#4a044e" font-size="10" font-weight="700">Facilities Ops &amp;</text>
+            <text x="1015" y="491" text-anchor="middle" fill="#4a044e" font-size="8.5" font-weight="600">Planning Management</text>
+          </g>
+
+          <!-- Opponents Subs (High Level Admin & Financial) -->
+          <g class="node-pill" onclick="selectNode('high-admin')" id="node-high-admin">
+            <ellipse cx="975" cy="685" rx="78" ry="29" fill="#f472b6" />
+            <text x="975" y="681" text-anchor="middle" fill="#831843" font-size="9.5" font-weight="700">Central Admin &amp;</text>
+            <text x="975" y="696" text-anchor="middle" fill="#831843" font-size="8.5" font-weight="600">Risk Management</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('financial')" id="node-financial">
+            <ellipse cx="865" cy="760" rx="76" ry="28" fill="#f472b6" />
+            <text x="865" y="756" text-anchor="middle" fill="#831843" font-size="10" font-weight="700">HRL Financial Ops &amp;</text>
+            <text x="865" y="771" text-anchor="middle" fill="#831843" font-size="8.5" font-weight="600">Student Wage Budget</text>
+          </g>
+
+          <!-- Beneficiaries Subs (Student Affairs & Training) -->
+          <g class="node-pill" onclick="selectNode('student-affairs')" id="node-student-affairs">
+            <ellipse cx="350" cy="775" rx="78" ry="28" fill="#818cf8" />
+            <text x="350" y="771" text-anchor="middle" fill="#1e1b4b" font-size="10" font-weight="700">UM Division of</text>
+            <text x="350" y="786" text-anchor="middle" fill="#1e1b4b" font-size="8.5" font-weight="600">Student Affairs (VP/Deans)</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('training')" id="node-training">
+            <ellipse cx="230" cy="705" rx="78" ry="29" fill="#818cf8" />
+            <text x="230" y="701" text-anchor="middle" fill="#1e1b4b" font-size="10" font-weight="700">Customer Service &amp;</text>
+            <text x="230" y="716" text-anchor="middle" fill="#1e1b4b" font-size="8.5" font-weight="600">Student Staff Training</text>
+          </g>
+
+          <!-- Influencers Subs (Student Government & RSA) - Shifted with 115px vertical separation from Parents -->
+          <g class="node-pill" onclick="selectNode('sg')" id="node-sg">
+            <ellipse cx="175" cy="415" rx="78" ry="28" fill="#fcd34d" />
+            <text x="175" y="411" text-anchor="middle" fill="#78350f" font-size="10" font-weight="700">UM Student Gov</text>
+            <text x="175" y="426" text-anchor="middle" fill="#78350f" font-size="8.5" font-weight="600">(Senate Campus Life)</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('rsa')" id="node-rsa">
+            <ellipse cx="175" cy="530" rx="78" ry="28" fill="#fcd34d" />
+            <text x="175" y="526" text-anchor="middle" fill="#78350f" font-size="10" font-weight="700">Resident Student</text>
+            <text x="175" y="541" text-anchor="middle" fill="#78350f" font-size="8.5" font-weight="600">Assoc. (RSA Advocacy)</text>
+          </g>
+
+          <!-- Indirect Users Subs (RAs, Other Offices, Parents) -->
+          <g class="node-pill" onclick="selectNode('ra')" id="node-ra">
+            <ellipse cx="280" cy="140" rx="74" ry="28" fill="#7dd3fc" />
+            <text x="280" y="136" text-anchor="middle" fill="#0c4a6e" font-size="10.5" font-weight="700">Resident</text>
+            <text x="280" y="151" text-anchor="middle" fill="#0c4a6e" font-size="9" font-weight="600">Assistants (RAs)</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('offices')" id="node-offices">
+            <ellipse cx="180" cy="215" rx="78" ry="28" fill="#7dd3fc" />
+            <text x="180" y="211" text-anchor="middle" fill="#0c4a6e" font-size="10" font-weight="700">Other Campus Desks</text>
+            <text x="180" y="226" text-anchor="middle" fill="#0c4a6e" font-size="8.5" font-weight="600">(Cane Central / IT / Parking)</text>
+          </g>
+
+          <g class="node-pill" onclick="selectNode('parents')" id="node-parents">
+            <ellipse cx="235" cy="305" rx="78" ry="28" fill="#7dd3fc" />
+            <text x="235" y="301" text-anchor="middle" fill="#0c4a6e" font-size="10" font-weight="700">UM Parents &amp; Families</text>
+            <text x="235" y="316" text-anchor="middle" fill="#0c4a6e" font-size="8.5" font-weight="600">("Cane Family" Hotline)</text>
+          </g>
+
+          <!-- ================= OUTER LEAF TEXT LABELS ================= -->
+          <!-- Top Right Leafs -->
+          <text x="935" y="95" text-anchor="middle" fill="#7e22ce" font-size="9" font-weight="600">Lakeside &amp; Vista Desk</text>
+          <text x="1065" y="112" text-anchor="middle" fill="#7e22ce" font-size="9" font-weight="600">Mahoney-Pearson Staff</text>
+          <text x="1115" y="235" text-anchor="start" fill="#7e22ce" font-size="9" font-weight="600">First-Year Residents</text>
+          <text x="1115" y="300" text-anchor="start" fill="#7e22ce" font-size="9" font-weight="600">Upperclassmen</text>
+
+          <!-- Top Left Leafs -->
+          <text x="280" y="85" text-anchor="middle" fill="#0284c7" font-size="9" font-weight="600">Floor Leaders &amp; Mentors</text>
+          <text x="70" y="219" text-anchor="end" fill="#0284c7" font-size="8.5" font-weight="600">Misdirected Intake Calls</text>
+          <text x="115" y="309" text-anchor="end" fill="#0284c7" font-size="8.5" font-weight="600">Concerned Family Escalations</text>
+
+          <!-- Left Influencers Leafs -->
+          <text x="60" y="419" text-anchor="end" fill="#b45309" font-size="9" font-weight="600">SG Senate Resolutions</text>
+          <text x="60" y="534" text-anchor="end" fill="#b45309" font-size="9" font-weight="600">Hall Councils &amp; Presidents</text>
+
+          <!-- Bottom Left Beneficiaries Leafs -->
+          <text x="115" y="709" text-anchor="end" fill="#4338ca" font-size="9" font-weight="600">Staff Retention &amp; Onboarding</text>
+          <text x="350" y="836" text-anchor="middle" fill="#4338ca" font-size="9" font-weight="600">VP Student Affairs Office</text>
+
+          <!-- Bottom Right Opponents Leafs -->
+          <text x="865" y="805" text-anchor="middle" fill="#be185d" font-size="9" font-weight="600">Wage &amp; Licensing Caps</text>
+          <text x="1065" y="730" text-anchor="middle" fill="#be185d" font-size="9" font-weight="600">Policy &amp; Legal Compliance</text>
+
+          <!-- Right Decision Makers Leafs -->
+          <text x="1145" y="359" text-anchor="start" fill="#7e22ce" font-size="9.5" font-weight="600">HRL Executive Directors</text>
+          <text x="1145" y="484" text-anchor="start" fill="#7e22ce" font-size="9.5" font-weight="600">Physical Plant &amp; TMA Dispatch</text>
+        </svg>
+      </div>
+
+      <!-- Quick Legend Footer -->
+      <div class="mt-4 pt-3 border-t border-purple-50 flex flex-wrap items-center justify-center gap-3 text-[11px] font-semibold text-slate-600">
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-600"></span> Direct Users</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-sky-500"></span> Indirect Users</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-800"></span> Decision Makers</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500"></span> Influencers</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-indigo-600"></span> Beneficiaries</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-pink-600"></span> Opponents</span>
+        <span class="inline-flex items-center gap-1.5 text-red-500"><span class="w-3 h-0.5 border-b-2 border-dashed border-red-500"></span> Inter-Entity Friction Arcs</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Dynamic Inspector Panel -->
+    <div class="lg:col-span-3 space-y-5 sticky top-6">
+
+      <!-- Active Stakeholder Detail Card -->
+      <div id="inspectorCard" class="bg-white border-2 border-purple-200 rounded-3xl p-5 shadow-lg shadow-purple-900/5 transition-all">
+        <div class="flex items-center justify-between mb-2">
+          <span id="cardCategoryBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 uppercase tracking-wider">
+            Center Problem Area
+          </span>
+          <span id="cardOrgType" class="text-xs text-slate-400 font-mono">Core Challenge</span>
+        </div>
+        
+        <h3 id="cardTitle" class="heading-font text-xl font-bold text-slate-900 leading-snug">
+          Frontline Information Infrastructure
+        </h3>
+        
+        <p id="cardDescription" class="text-xs text-slate-600 mt-2 leading-relaxed">
+          The operational disconnect between centralized university operations and student-facing intake desks. Frontline staff bear the brunt of confusion with zero live maintenance visibility.
+        </p>
+
+        <div id="cardDetailsBox" class="mt-4 pt-3 border-t border-purple-100 space-y-2.5 text-xs">
+          <div class="bg-purple-50/70 p-2.5 rounded-xl border border-purple-100">
+            <strong class="text-purple-950 font-bold block mb-0.5">Core Stake / Need:</strong>
+            <span id="cardStakeText" class="text-slate-700">Immediate, closed-loop status visibility for facilities work orders and administrative answers.</span>
+          </div>
+          <div class="bg-rose-50/70 p-2.5 rounded-xl border border-rose-100">
+            <strong class="text-rose-950 font-bold block mb-0.5">Friction / Worries:</strong>
+            <span id="cardWorryText" class="text-slate-700">Deflection loops push unresolved questions onto peer RAs, creating dead ends and learned helplessness.</span>
+          </div>
+          <div class="bg-amber-50/70 p-2.5 rounded-xl border border-amber-100">
+            <strong class="text-amber-950 font-bold block mb-0.5">Institutional Leverage / Power:</strong>
+            <span id="cardPowerText" class="text-slate-700">Controls shift-level SOPs and whether students receive helpful resolutions or silence.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // Updated Stakeholder Data Dictionary with UM Specific Entities
+    const stakeholderData = {
+      'center': {
+        title: 'Frontline Information Infrastructure',
+        category: 'Center Focus Area',
+        orgType: 'Core Challenge Space',
+        description: 'The operational disconnect between centralized university operations (Facilities, HRL) and physical intake desks, leaving frontline student employees with zero visibility into maintenance schedules.',
+        stake: 'Real-time, closed-loop status visibility for campus facilities and student inquiries.',
+        worries: 'Deflection loops push unresolved questions onto peer RAs, creating dead ends and learned helplessness.',
+        power: 'Sets shift SOPs and dictates whether students receive immediate clarity or endless runarounds.'
+      },
+      'cat-direct': {
+        title: 'Direct Users',
+        category: '1. Direct Users',
+        orgType: 'Category Overview',
+        description: 'Students and frontline desk workers who directly interact with front desks or maintenance ticketing touchpoints.',
+        stake: 'Hands-on usability, instant search capability, and accurate real-time maintenance timelines.',
+        worries: 'Complicated user interfaces that slow down daily shift work or fail to provide definitive answers.',
+        power: 'Ultimate adopters; if frontline staff find a system cumbersome, they revert to verbal deflections.'
+      },
+      'rda': {
+        title: 'Residential Desk Assistants (RDAs) & Frontline Staff',
+        category: '1. Direct Users',
+        orgType: 'UM Student Employees (Vista, Lakeside, Centennial)',
+        description: 'Undergraduate student workers stationed at residential reception desks handling foot traffic, check-ins, and incoming student questions.',
+        stake: 'Need immediate answers to routine questions (water fountains, practice rooms, laundry) to do their job without stress.',
+        worries: 'Bearing the emotional brunt of frustrated residents while being left completely in the dark by facilities.',
+        power: 'Primary front-door filter for residential life; decide whether to investigate or deflect.'
+      },
+      'students': {
+        title: 'UM Residential Students',
+        category: '1. Direct Users',
+        orgType: 'Lakeside Village, Mahoney-Pearson, Centennial Residents',
+        description: 'Undergraduate students approaching campus front desks when everyday amenities or facilities break down.',
+        stake: 'Fast, dependable resolution so their living and academic environments function properly.',
+        worries: 'Following proper procedures only to be met with "I don’t know" loops that undermine self-efficacy.',
+        power: 'Hold consumer power and voice satisfaction ratings in campus-wide climate and housing surveys.'
+      },
+      'cat-indirect': {
+        title: 'Indirect Users',
+        category: '2. Indirect Users',
+        orgType: 'Category Overview',
+        description: 'People deeply affected by frontline communication breakdowns without directly managing desk software: RAs, partner desks, and parents.',
+        stake: 'A well-functioning residential community where problems get resolved without escalating.',
+        worries: 'Becoming accidental bottlenecks or receiving panicked calls about unresolved campus chaos.',
+        power: 'Shape hallway culture, peer trust, and external parent advocacy.'
+      },
+      'ra': {
+        title: 'Resident Assistants (RAs) & First-Year Fellows',
+        category: '2. Indirect Users',
+        orgType: 'UM Housing Student Staff',
+        description: 'Undergraduate student leaders living on residential floors who inherit deflected maintenance complaints from front desks.',
+        stake: 'Need students to receive reliable facilities information so peer relationships are not strained.',
+        worries: 'Being put in an awkward position where residents expect answers that RAs have no administrative tools to provide.',
+        power: 'Direct access to Residence Hall Directors; can escalate systemic floor issues during weekly staff 1-on-1s.'
+      },
+      'offices': {
+        title: 'Partner Campus Desks (Cane Central, IT, Parking)',
+        category: '2. Indirect Users',
+        orgType: 'Central Student Service Hubs',
+        description: 'Other campus customer service hubs that receive misdirected students when residential desks lack accurate cross-departmental answers.',
+        stake: 'Clear referral pathways to avoid absorbing unrelated residential complaints.',
+        worries: 'Wasted staff hours redirecting students back and forth across campus.',
+        power: 'Can refuse to accept out-of-scope tickets and push for standardized referral protocols.'
+      },
+      'parents': {
+        title: 'UM Parents & Families Association ("Cane Family")',
+        category: '2. Indirect Users',
+        orgType: 'Parent & Family Relations Network',
+        description: 'Parents who receive stressed phone calls from students unable to get broken amenities or room issues resolved.',
+        stake: 'Peace of mind that their student is living in a safe, fully functional, and responsive environment.',
+        worries: 'High tuition and housing fees going toward unresponsive administrative bureaucracy.',
+        power: 'Can escalate complaints directly to the Vice President for Student Affairs or University Leadership.'
+      },
+      'cat-decision': {
+        title: 'Decision Makers',
+        category: '3. Decision Makers',
+        orgType: 'Category Overview',
+        description: 'University administrators with the budgetary, operational, and veto authority to implement cross-departmental tools.',
+        stake: 'Efficient operations, reduced liability, high retention, and cost-effective staff training.',
+        worries: 'Interdepartmental boundary overreach, software integration costs, and operational friction.',
+        power: 'Can mandate tool adoption, reallocate training budgets, or kill proposed solutions.'
+      },
+      'hrl': {
+        title: 'UM Housing & Residential Life (HRL) Senior Leadership',
+        category: '3. Decision Makers',
+        orgType: 'Executive Leadership & Facilities Operations',
+        description: 'Associate Directors and senior leaders managing residential college staff SOPs, desk training, and facilities liaisons.',
+        stake: 'Protecting residential satisfaction metrics and reducing semesterly student worker turnover.',
+        worries: 'Adding complex training requirements to hourly student desk assistants who already have busy academic schedules.',
+        power: 'Direct authority over front desk shift manuals, software permissions, and interdepartmental liaison pacts.'
+      },
+      'facilities-mgmt': {
+        title: 'UM Facilities Operations & Planning Management',
+        category: '3. Decision Makers',
+        orgType: 'Central Physical Plant Administration',
+        description: 'University directors managing campus physical infrastructure, trade contractors, and work orders.',
+        stake: 'Streamlined ticket dispatching and protecting technical teams from unmanaged public inquiries.',
+        worries: 'Exposing internal work queues might lead to public scrutiny over backlog delays or parts shortages.',
+        power: 'Owns the physical maintenance work-order databases (TMA Systems) and controls API/data sharing permissions.'
+      },
+      'cat-opponents': {
+        title: 'Opponents (Admin & Financial Friction)',
+        category: '6. Opponents',
+        orgType: 'Category Overview',
+        description: 'High-level administration and financial gatekeepers with legitimate concerns about cost, training hours, and policy risk.',
+        stake: 'Maintaining tight student employment budgets, data privacy, and organizational control.',
+        worries: 'Unfunded training mandates, software licensing expenses, and unauthorized staff communication.',
+        power: 'Can reject budget proposals or cite university privacy and risk policies to block external data sharing.'
+      },
+      'high-admin': {
+        title: 'High-Level Central Administration & Risk Management',
+        category: '6. Opponents',
+        orgType: 'Central University Operations & Legal Counsel',
+        description: 'Senior administrators focused on institutional compliance, data boundaries, and avoiding public commitments to repair timelines.',
+        stake: 'Protecting university liability and adhering strictly to established institutional hierarchy.',
+        worries: 'Student workers providing inaccurate repair commitments that expose the university to parent or legal backlash.',
+        power: 'Can mandate strict nondisclosure and prohibit non-certified staff from viewing maintenance backlogs.'
+      },
+      'financial': {
+        title: 'HRL Financial Operations & Student Wage Budget Admins',
+        category: '6. Opponents',
+        orgType: 'Division Financial Controllers',
+        description: 'Administrators managing hourly student worker payroll budgets, shift caps, and software licensing allocations.',
+        stake: 'Maintaining balanced student employment budgets without incurring additional training overtime.',
+        worries: 'New software systems requiring paid training hours that drive up student employment payroll costs.',
+        power: 'Can reject proposals that require additional paid training hours or recurring third-party software seat fees.'
+      },
+      'cat-beneficiaries': {
+        title: 'Beneficiaries',
+        category: '5. Beneficiaries',
+        orgType: 'Category Overview',
+        description: 'Divisions and offices that gain substantial long-term value from streamlined frontline clarity: Student Affairs and Training coordinators.',
+        stake: 'Higher institutional trust, elevated retention, and smoother campus onboarding.',
+        worries: 'Systemic student disengagement caused by repeated institutional roadblocks.',
+        power: 'Allocate institutional funding and advocate at presidential cabinet levels.'
+      },
+      'student-affairs': {
+        title: 'UM Division of Student Affairs (VP / Deans)',
+        category: '5. Beneficiaries',
+        orgType: 'Executive Division Leadership',
+        description: 'Division overseeing student life, campus climate, and first-to-second year retention rates.',
+        stake: 'Eliminating administrative "sludge" that causes student disillusionment and lowers campus climate scores.',
+        worries: 'Frontline dissatisfaction quietly undermining overall student belonging and retention.',
+        power: 'Can sponsor cross-divisional initiatives bridging Student Affairs and Central Operations.'
+      },
+      'training': {
+        title: 'Customer Service & Student Staff Training Coordinators',
+        category: '5. Beneficiaries',
+        orgType: 'HRL Professional Staff Supervisors',
+        description: 'Residence Hall Directors and coordinators tasked with training, scheduling, and retaining student desk workers.',
+        stake: 'Standardized reference tools that make shift hand-offs effortless and prevent repetitive training gaps.',
+        worries: 'High staff turnover forcing continuous mid-semester re-hiring and retraining.',
+        power: 'Directly craft shift orientation checklists and daily shift hand-off logbooks.'
+      },
+      'cat-influencers': {
+        title: 'Influencers',
+        category: '4. Influencers',
+        orgType: 'Category Overview',
+        description: 'Student Government and representative bodies that shape peer opinion and lobby university leadership for policy shifts.',
+        stake: 'Amplifying student voices and securing tangible improvements to residential living conditions.',
+        worries: 'Student concerns being dismissed by administrators as isolated complaints rather than systemic issues.',
+        power: 'Can pass formal legislative resolutions and schedule direct advisory meetings with Housing Directors.'
+      },
+      'sg': {
+        title: 'UM Student Government (Senate Campus Life)',
+        category: '4. Influencers',
+        orgType: 'UM SG Senate Committee on Student Affairs',
+        description: 'University-wide student senators sponsoring legislation and meeting regularly with Student Affairs leadership.',
+        stake: 'Campus-wide service standards, equity of access, and administrative transparency.',
+        worries: 'Siloed departments avoiding accountability by pointing fingers at neighboring offices.',
+        power: 'Can sponsor high-visibility campus resolutions and direct student fee endowments.'
+      },
+      'rsa': {
+        title: 'Resident Student Association (RSA Advocacy)',
+        category: '4. Influencers',
+        orgType: 'Elected Student Residential Governance',
+        description: 'Student leaders representing on-campus residential colleges who meet weekly with HRL administrative liaisons.',
+        stake: 'Accountable to residential peers; need visible administrative follow-through on facility complaints.',
+        worries: 'Losing credibility with residents if repeated complaints about desks yield no institutional change.',
+        power: 'Direct weekly audience with HRL executive directors; can place frontline transparency on formal agendas.'
+      }
+    };
+
+    // Inspector Node Selection Logic
+    let activeNodeId = null;
+    function selectNode(nodeId) {
+      const data = stakeholderData[nodeId];
+      if (!data) return;
+
+      // Update active SVG highlight class
+      document.querySelectorAll('.node-pill').forEach(el => el.classList.remove('active-node'));
+      const activeEl = document.getElementById('node-' + nodeId);
+      if (activeEl) {
+        activeEl.classList.add('active-node');
+      }
+
+      // Populate Detail Card
+      document.getElementById('cardCategoryBadge').innerText = data.category;
+      document.getElementById('cardOrgType').innerText = data.orgType;
+      document.getElementById('cardTitle').innerText = data.title;
+      document.getElementById('cardDescription').innerText = data.description;
+      document.getElementById('cardStakeText').innerText = data.stake;
+      document.getElementById('cardWorryText').innerText = data.worries;
+      document.getElementById('cardPowerText').innerText = data.power;
+
+      // Subtle card flash animation
+      const card = document.getElementById('inspectorCard');
+      card.classList.add('ring-2', 'ring-purple-500');
+      setTimeout(() => card.classList.remove('ring-2', 'ring-purple-500'), 300);
+    }
+
+    // Toggle Relationship Lines
+    let showRelationships = true;
+    function toggleRelationshipLines() {
+      const group = document.getElementById('relationshipLinesGroup');
+      const btn = document.getElementById('toggleRelBtn');
+      showRelationships = !showRelationships;
+      if (showRelationships) {
+        group.style.opacity = '1';
+        group.style.pointerEvents = 'auto';
+        btn.classList.replace('bg-slate-700', 'bg-purple-600');
+      } else {
+        group.style.opacity = '0';
+        group.style.pointerEvents = 'none';
+        btn.classList.replace('bg-purple-600', 'bg-slate-700');
+      }
+    }
+
+    function resetSelection() {
+      selectNode('center');
+    }
+
+    // Default select center node on load
+    window.addEventListener('DOMContentLoaded', () => {
+      selectNode('center');
+    });
+  </script>
+</body>
+</html>
